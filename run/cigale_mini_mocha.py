@@ -127,7 +127,7 @@ def cigalegenconf(config, simple='False'):
         #analysis_params  
         variables='stellar.m_star, stellar.metallicity, sfh.sfr10Myrs, sfh.tau_main, sfh.age_main, sfh.age_burst, sfh.f_burst, dust.luminosity, dust.mass, dust.qpah, dust.umin, attenuation.V_B90, attenuation.FUV, attenuation.Av_BC, attenuation.mu,attenuation.slope_BC, attenuation.slope_ISM' 
         save_best_sed='True'
-        save_chi2='True'
+        save_chi2='False' #doesn't work on cori
         mock_flag='True'
         if simple !='True':
             inifile = open("pcigale.ini", "r")
