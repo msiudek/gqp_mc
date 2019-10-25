@@ -390,7 +390,7 @@ def _lgal_metadata(galids):
     '''
     tlookback, dt = [], [] 
     sfh_disk, sfh_bulge, Z_disk, Z_bulge, logM_disk, logM_bulge, logM_total = [], [], [], [], [], [], []
-    t_age_MW, Z_MW = [], [] 
+    t_age_MW, Z_MW, SFR = [], [], [] 
     for i, galid in enumerate(galids): 
         f_input = os.path.join(UT.lgal_dir(), 'gal_inputs', 
                 'gal_input_%i_BGS_template_FSPS_uvmiles.csv' % galid) 
@@ -411,7 +411,9 @@ def _lgal_metadata(galids):
         # mass weighted
         t_age_MW.append(np.sum(gal_input['sfh_t'] * (gal_input['sfh_disk'] + gal_input['sfh_bulge'])) / np.sum(gal_input['sfh_disk'] + gal_input['sfh_bulge']))
         Z_MW.append(np.sum(gal_input['Z_disk'] * gal_input['sfh_disk'] + gal_input['Z_bulge'] * gal_input['sfh_bulge']) / np.sum(gal_input['sfh_disk'] + gal_input['sfh_bulge']))
-    
+        # SFR(10Myr) # as t_lookback[-1]~0.01
+        SFR.append((gal_input['sfh_disk'][-1] + gal_input['sfh_bulge'][-1]) / gal_input['t_lookback'][-1]/1e9)
+   
     meta = {} 
     meta['galid']       = galids
     meta['t_lookback']  = tlookback
@@ -422,6 +424,7 @@ def _lgal_metadata(galids):
     meta['logM_disk']   = logM_disk
     meta['logM_bulge']  = logM_bulge
     meta['logM_total']  = logM_total
+    meta['SFR']         = SFR
     meta['t_age_MW']    = t_age_MW
     meta['Z_MW']        = Z_MW
     return meta
