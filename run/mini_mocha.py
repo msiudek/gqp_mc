@@ -1,4 +1,4 @@
-'''
+'''A
 
 scripts to generate data for the mini Mock Challenge (mini mocha) 
 
@@ -131,6 +131,41 @@ def validate_sample():
     return None 
 
 
+
+def plot_spectra(wave, flux, z, savename, returnfig = False):
+    '''
+    Plot spectra with errorbars.
+    '''
+    fig = plt.figure(figsize = (7,4))
+    plt.xlim(5000, 10000)
+    plt.xlabel('Wavelength [Angstrom]')
+    plt.ylabel('Observed flux')
+    plt.plot(wave, flux, color = 'teal')
+    plt.plot(wave, flux, 'gray', linewidth = 0.3, alpha = 0.5) 
+    plt.title('Simulated $z = %0.3f$'%( z))
+    plt.tight_layout()
+    if returnfig:
+        return fig
+    else:
+        plt.savefig(savename, dpi = 700)
+        plt.close()
+
+def plot_spectra_samples(wave, flux, z, bestfit, savename):
+    '''
+    bestfit: dictionary with various parameters from the MCMC fit
+
+    - bestfit['flux_model'] : flux of best-fit model 
+    '''
+    fig = plot_spectra(wave, flux, z, savename, returnfig = True)
+    #print(bestfit['flux_model'])
+    #print(bestfit['flux_model'])
+    #print(bestfit['wavelength_model'][0])
+    #print(bestfit['wavelength_model'])
+    plt.plot(bestfit['wavelength_model'][0], bestfit['flux_model'][0], 'powderblue', linewidth = 1., alpha = 1.) 
+    plt.savefig(savename, dpi = 700)
+    plt.close()
+
+
 def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwrite=False, justplot=False): 
     ''' Fit Lgal spectra. `noise` specifies whether to fit spectra without noise or 
     with BGS-like noise. Produces an MCMC chain and, if not on nersc, a corner plot of the posterior. 
@@ -147,8 +182,8 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
         because I'm having issues plotting in NERSC. (default: False) 
     '''
     # read noiseless Lgal spectra of the spectral_challenge mocks 
-    specs, meta = Data.Spectra(sim='lgal', noise=noise, lib='bc03', sample='mini_mocha') 
-
+    specs, meta = Data.Spectra(sim='lgal', noise=noise, lib='bc03', sample='mini_mocha')
+    print (specs)
     model       = 'vanilla'
     w_obs       = specs['wave']
     flux_obs    = specs['flux'][igal]
@@ -205,8 +240,13 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
         fig = DFM.corner(bestfit['mcmc_chain'], range=bestfit['priors'], quantiles=[0.16, 0.5, 0.84], 
                 levels=[0.68, 0.95], nbin=40, smooth=True, 
                 truths=truths, labels=labels, label_kwargs={'fontsize': 20}) 
-        fig.savefig(f_bf.replace('.hdf5', '.png'), bbox_inches='tight') 
+        fig.savefig(f_bf.replace('.hdf5', '.png'), bbox_inches='tight')
+
+        plot_spectra_samples(w_obs, flux_obs, z = meta['redshift'][igal], bestfit = bestfit,
+                                    savename=f_bf.replace('.hdf5', '_spectra_samples.png'))
+        
     return None 
+
 
 
 def fit_photometry(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwrite=False, justplot=False): 
