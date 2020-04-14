@@ -152,9 +152,9 @@ def load_spectravipers(imin, imax):
         data = hdul[1].data
         
         wave.append(data['WAVES'])
-        flux.append(data['FLUXES'])
-        ivar.append(1/(data['NOISE']**2))
-        noise.append(data['NOISE'])
+        flux.append(data['FLUXES']* 1e17) #convert to 10^-17 ergs/s/cm^2/Ang   
+        ivar.append(1/((data['NOISE']* 1e17)**2)) #convert to 1/(10^-17 ergs/s/cm^2/Ang)^2 
+        noise.append(data['NOISE']* 1e17) #convert to 10^-17 ergs/s/cm^2/Ang   
         
         # get vipers id from the filename
         survey, id_i = filename[:-5].split('_')
@@ -187,7 +187,7 @@ def plot_spectra_vipers(wave, flux, noise, id_i, z, savename, returnfig = False)
     fig = plt.figure(figsize = (7,4))
     plt.xlim(5000, 10000)
     plt.xlabel('Wavelength [Angstrom]')
-    plt.ylabel('Observed flux')
+    plt.ylabel('Observed flux [$10^{-17}$ ergs/s/cm$^2$/Ang]')
     plt.errorbar(wave, flux, noise, fmt = 'o', markersize = 2.5, color = 'teal', capsize=1.0, elinewidth=0.9, capthick=0.9)
     plt.plot(wave, flux, 'gray', linewidth = 0.5, alpha = 0.5) 
     plt.title('VIPERS %d $z = %0.3f$'%(id_i, z))
@@ -205,10 +205,6 @@ def plot_spectra_vipers_samples(wave, flux, noise, id_i, z, bestfit, savename):
     - bestfit['flux_model'] : flux of best-fit model 
     '''
     fig = plot_spectra_vipers(wave, flux, noise, id_i, z, savename, returnfig = True)
-    #print(bestfit['flux_model'])
-    #print(bestfit['flux_model'])
-    #print(bestfit['wavelength_model'][0])
-    #print(bestfit['wavelength_model'])
     plt.plot(bestfit['wavelength_model'][0], bestfit['flux_model'][0], 'powderblue', linewidth = 1., alpha = 1.) 
     plt.savefig(savename, dpi = 700)
 
@@ -319,8 +315,8 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
         plot_spectra_vipers_samples(w_obs, flux_obs, specs['noise'][igal], id_i = meta['id'][igal],
                                     z = meta['redshift'][igal], bestfit = bestfit,
                                     savename=f_bf.replace('.hdf5', '_spectra_samples.png'))
-        #plot_walk(bestfit['mcmc_chain'], labels, savename=f_bf.replace('.hdf5', '_walk.png'))
-        #plot_contours(bestfit['mcmc_chain'], labels, savename=f_bf.replace('.hdf5', '_contours.png'))
+        plot_walk(bestfit['mcmc_chain'], labels, savename=f_bf.replace('.hdf5', '_walk.png'))
+        plot_contours(bestfit['mcmc_chain'], labels, savename=f_bf.replace('.hdf5', '_contours.png'))
     return None 
 
 
