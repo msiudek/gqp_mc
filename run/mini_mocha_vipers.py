@@ -133,7 +133,10 @@ def validate_sample():
 
 def load_spectravipers(imin, imax):
     
-    path_spectra = '../../../spectra/'
+    if os.environ['NERSC_HOST'] == 'cori':
+        path_spectra = '/global/cscratch1/sd/jprat/galaxy_properties_data/spectra/'
+    else:
+        path_spectra = '../../../spectra/'
     filenames = [f for f in os.listdir(path_spectra) if os.path.isfile(os.path.join(path_spectra, f))]
     filenames = filenames[imin:imax]
     
