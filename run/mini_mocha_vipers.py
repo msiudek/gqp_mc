@@ -132,11 +132,14 @@ def validate_sample():
 
 
 def load_spectravipers(imin, imax):
-    
-    if os.environ['NERSC_HOST'] == 'cori':
-        path_spectra = '/global/cscratch1/sd/jprat/galaxy_properties_data/spectra/'
-    else:
+
+    try: 
+        # plotting on nersc never works.
+        if os.environ['NERSC_HOST'] == 'cori': 
+            path_spectra = '/global/cscratch1/sd/jprat/galaxy_properties_data/spectra/'
+    except KeyError: 
         path_spectra = '../../../spectra/'
+        
     filenames = [f for f in os.listdir(path_spectra) if os.path.isfile(os.path.join(path_spectra, f))]
     filenames = filenames[imin:imax]
     
@@ -144,6 +147,7 @@ def load_spectravipers(imin, imax):
     flux = []
     ivar = []
     noise = []
+    mask = []
     redshift = []
     id_list = []
     
@@ -157,7 +161,17 @@ def load_spectravipers(imin, imax):
         wave.append(data['WAVES'])
         flux.append(data['FLUXES']* 1e17) #convert to 10^-17 ergs/s/cm^2/Ang   
         ivar.append(1/((data['NOISE']* 1e17)**2)) #convert to 1/(10^-17 ergs/s/cm^2/Ang)^2 
-        noise.append(data['NOISE']* 1e17) #convert to 10^-17 ergs/s/cm^2/Ang   
+        noise.append(data['NOISE']* 1e17) #convert to 10^-17 ergs/s/cm^2/Ang
+
+        # Create mask for unedited objects, which have mask = 0
+        # MASK: the mask describing the editing that has been done at each wavelength
+        # 0: not edited
+        # 1: wavelength edited by a human intervention; the original manual editing ha been replaced by the PCA automatic editing
+        # 2: wavelength edited by the PCA algorithm
+        # 3: wavelength marked to be edited by the PCA algorithm, but not really edited being in a region where a prominent spectral feature could be present
+
+        mask_0 = data['MASK']==0
+        mask.append(mask_0)
         
         # get vipers id from the filename
         survey, id_i = filename[:-5].split('_')
@@ -174,6 +188,7 @@ def load_spectravipers(imin, imax):
         'flux': np.array(flux),
         'ivar': np.array(ivar),
         'noise': np.array(noise),
+        'mask': np.array(mask),
         }
     
     meta = {
@@ -183,7 +198,7 @@ def load_spectravipers(imin, imax):
     return specs, meta
 
 
-def plot_spectra_vipers(wave, flux, noise, id_i, z, savename, returnfig = False):
+def plot_spectra_vipers(wave, flux, noise, mask, id_i, z, savename, returnfig = False):
     '''
     Plot vipers spectra with errorbars.
     '''
@@ -191,8 +206,10 @@ def plot_spectra_vipers(wave, flux, noise, id_i, z, savename, returnfig = False)
     plt.xlim(5000, 10000)
     plt.xlabel('Wavelength [Angstrom]')
     plt.ylabel('Observed flux [$10^{-17}$ ergs/s/cm$^2$/Ang]')
-    plt.errorbar(wave, flux, noise, fmt = 'o', markersize = 2.5, color = 'teal', capsize=1.0, elinewidth=0.9, capthick=0.9)
-    plt.plot(wave, flux, 'gray', linewidth = 0.5, alpha = 0.5) 
+    plt.errorbar(wave[mask], flux[mask], noise[mask], fmt = 'o', markersize = 2.5, color = 'teal', capsize=1.0, elinewidth=0.9, capthick=0.9)
+    if mask is not None:
+        plt.errorbar(wave[~mask], flux[~mask], noise[~mask], fmt = 'o', markersize = 2.5, color = 'lightgray', capsize=1.0, elinewidth=0.9, capthick=0.9)
+    plt.plot(wave[mask], flux[mask], 'gray', linewidth = 0.5, alpha = 0.5) 
     plt.title('VIPERS %d $z = %0.3f$'%(id_i, z))
     plt.tight_layout()
     if returnfig:
@@ -201,13 +218,13 @@ def plot_spectra_vipers(wave, flux, noise, id_i, z, savename, returnfig = False)
         plt.savefig(savename, dpi = 700)
         plt.close()
 
-def plot_spectra_vipers_samples(wave, flux, noise, id_i, z, bestfit, savename):
+def plot_spectra_vipers_samples(wave, flux, noise, mask, id_i, z, bestfit, savename):
     '''
     bestfit: dictionary with various parameters from the MCMC fit
     - bestfit['wavelength_model'] : wavelength of best-fit model                                                                                                                                                                                                       
     - bestfit['flux_model'] : flux of best-fit model 
     '''
-    fig = plot_spectra_vipers(wave, flux, noise, id_i, z, savename, returnfig = True)
+    fig = plot_spectra_vipers(wave, flux, noise, mask, id_i, z, savename, returnfig = True)
     plt.plot(bestfit['wavelength_model'][0], bestfit['flux_model'][0], 'powderblue', linewidth = 1., alpha = 1.) 
     plt.savefig(savename, dpi = 700)
 
@@ -248,7 +265,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     # read noiseless Lgal spectra of the spectral_challenge mocks
     #specs, meta = Data.Spectra(sim='lgal', noise=noise, lib='bc03', sample='mini_mocha')
     # Read vipers spectra
-    specs, meta = load_spectravipers(imin = 0, imax = 50)
+    specs, meta = load_spectravipers(imin = 0, imax = 100)
     #print(specs)
 
     model       = 'vanilla'
@@ -271,7 +288,8 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
 
     f_bf = os.path.join(UT.dat_dir(), 'vipers', 'ifsps', 'lgal.spec.noise_%s.%s.%i.hdf5' % (noise, model, igal))
 
-    #plot_spectra_vipers(w_obs, flux_obs, specs['noise'][igal], meta['id'][igal],meta['redshift'][igal], savename=f_bf.replace('.hdf5', '_spectra.png'))
+    #plot_spectra_vipers(specs['wave'][igal], specs['flux'][igal], specs['noise'][igal], mask=specs['mask'][igal],
+    #                    meta['id'][igal], meta['redshift'][igal], savename=f_bf.replace('.hdf5', '_spectra.png'))
 
     if not justplot: 
         if os.path.isfile(f_bf): 
@@ -284,7 +302,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
                 flux_obs, 
                 ivar_obs, 
                 meta['redshift'][igal], 
-                mask=None, 
+                mask=specs['mask'][igal], 
                 nwalkers=nwalkers, 
                 burnin=burnin, 
                 niter=niter, 
@@ -314,10 +332,10 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
                 #truths=truths, labels=labels, label_kwargs={'fontsize': 20}) 
         fig.savefig(f_bf.replace('.hdf5', '.png'), bbox_inches='tight')
 
-
-        plot_spectra_vipers_samples(w_obs, flux_obs, specs['noise'][igal], id_i = meta['id'][igal],
-                                    z = meta['redshift'][igal], bestfit = bestfit,
+        plot_spectra_vipers_samples(w_obs, flux_obs, specs['noise'][igal], mask = specs['mask'][igal],
+                                    id_i = meta['id'][igal], z = meta['redshift'][igal], bestfit = bestfit,
                                     savename=f_bf.replace('.hdf5', '_spectra_samples.png'))
+        
         plot_walk(bestfit['mcmc_chain'], labels, savename=f_bf.replace('.hdf5', '_walk.png'))
         plot_contours(bestfit['mcmc_chain'], labels, savename=f_bf.replace('.hdf5', '_contours.png'))
     return None 
