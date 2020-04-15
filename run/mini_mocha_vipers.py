@@ -248,7 +248,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     # read noiseless Lgal spectra of the spectral_challenge mocks
     #specs, meta = Data.Spectra(sim='lgal', noise=noise, lib='bc03', sample='mini_mocha')
     # Read vipers spectra
-    specs, meta = load_spectravipers(imin = 0, imax = 10)
+    specs, meta = load_spectravipers(imin = 0, imax = 50)
     #print(specs)
 
     model       = 'vanilla'
