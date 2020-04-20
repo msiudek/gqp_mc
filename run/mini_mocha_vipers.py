@@ -213,7 +213,7 @@ def plot_spectra_vipers(wave, flux, noise, mask, id_i, z, savename, returnfig = 
         plt.errorbar(wave[mask], flux[mask], noise[mask], fmt = 'o', markersize = 2.5, color = 'teal', capsize=1.0, elinewidth=0.9, capthick=0.9)
         plt.errorbar(wave[~mask], flux[~mask], noise[~mask], fmt = 'o', markersize = 2.5, color = 'lightgray', capsize=1.0, elinewidth=0.9, capthick=0.9)
         plt.plot(wave[mask], flux[mask], 'gray', linewidth = 0.5, alpha = 0.5) 
-    plt.title('VIPERS %d $z = %0.3f$'%(id_i, z))
+    plt.title('VIPERS %d $z = %0.4f$'%(id_i, z))
     plt.tight_layout()
     if returnfig:
         return fig
