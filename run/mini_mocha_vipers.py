@@ -28,7 +28,7 @@ mpl.rcParams['ytick.labelsize'] = 'x-large'
 mpl.rcParams['ytick.major.size'] = 5
 mpl.rcParams['ytick.major.width'] = 1.5
 mpl.rcParams['legend.frameon'] = False
-
+import ipdb
 
 def construct_sample(): 
     ''' construct the mini Mock Challenge photometry, spectroscopy 
@@ -205,10 +205,14 @@ def plot_spectra_vipers(wave, flux, noise, mask, id_i, z, savename, returnfig = 
     plt.xlim(5000, 10000)
     plt.xlabel('Wavelength [Angstrom]')
     plt.ylabel('Observed flux [$10^{-17}$ ergs/s/cm$^2$/Ang]')
-    plt.errorbar(wave[mask], flux[mask], noise[mask], fmt = 'o', markersize = 2.5, color = 'teal', capsize=1.0, elinewidth=0.9, capthick=0.9)
+    if mask is None:
+        plt.errorbar(wave, flux, noise, fmt = 'o', markersize = 2.5, color = 'teal', capsize=1.0, elinewidth=0.9, capthick=0.9)
+        plt.plot(wave, flux, 'gray', linewidth = 0.5, alpha = 0.5) 
+        
     if mask is not None:
+        plt.errorbar(wave[mask], flux[mask], noise[mask], fmt = 'o', markersize = 2.5, color = 'teal', capsize=1.0, elinewidth=0.9, capthick=0.9)
         plt.errorbar(wave[~mask], flux[~mask], noise[~mask], fmt = 'o', markersize = 2.5, color = 'lightgray', capsize=1.0, elinewidth=0.9, capthick=0.9)
-    plt.plot(wave[mask], flux[mask], 'gray', linewidth = 0.5, alpha = 0.5) 
+        plt.plot(wave[mask], flux[mask], 'gray', linewidth = 0.5, alpha = 0.5) 
     plt.title('VIPERS %d $z = %0.3f$'%(id_i, z))
     plt.tight_layout()
     if returnfig:
@@ -277,7 +281,13 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     if noise == 'none': # no noise 
         ivar_obs = np.ones(len(w_obs)) 
 
-
+    if 'mask0' in noise:
+        print('Using mask.')
+        mask = specs['mask'][igal]
+    else:
+        print('No mask applied.')
+        mask = None
+        
     print('--- input ---') 
     print('z = %f' % meta['redshift'][igal])
     #print('log M* total = %f' % meta['logM_total'][igal])
@@ -287,7 +297,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
 
     f_bf = os.path.join(UT.dat_dir(), 'vipers', 'ifsps', 'lgal.spec.noise_%s.%s.%i.hdf5' % (noise, model, igal))
 
-    #plot_spectra_vipers(specs['wave'][igal], specs['flux'][igal], specs['noise'][igal], mask=specs['mask'][igal],
+    #plot_spectra_vipers(specs['wave'][igal], specs['flux'][igal], specs['noise'][igal], mask=mask,
     #                    meta['id'][igal], meta['redshift'][igal], savename=f_bf.replace('.hdf5', '_spectra.png'))
 
     if not justplot: 
@@ -301,7 +311,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
                 flux_obs, 
                 ivar_obs, 
                 meta['redshift'][igal], 
-                mask=specs['mask'][igal], 
+                mask=mask, 
                 nwalkers=nwalkers, 
                 burnin=burnin, 
                 niter=niter, 
@@ -331,7 +341,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
                 #truths=truths, labels=labels, label_kwargs={'fontsize': 20}) 
         fig.savefig(f_bf.replace('.hdf5', '.png'), bbox_inches='tight')
 
-        plot_spectra_vipers_samples(w_obs, flux_obs, specs['noise'][igal], mask = specs['mask'][igal],
+        plot_spectra_vipers_samples(w_obs, flux_obs, specs['noise'][igal], mask = mask,
                                     id_i = meta['id'][igal], z = meta['redshift'][igal], bestfit = bestfit,
                                     savename=f_bf.replace('.hdf5', '_spectra_samples.png'))
         
