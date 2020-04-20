@@ -140,7 +140,8 @@ def load_spectravipers(imin, imax):
     except KeyError: 
         path_spectra = '../../../spectra/'
         
-    filenames = [f for f in os.listdir(path_spectra) if os.path.isfile(os.path.join(path_spectra, f))]
+    filenames = [f for f in os.listdir(path_spectra) if os.path.isfile(os.path.join(path_spectra, f))&f.startswith("VIPERS_")]
+    filenames = np.sort(filenames)
     filenames = filenames[imin:imax]
     
     wave = []
@@ -295,7 +296,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     #print('MW Z = %f' % meta['Z_MW'][igal]) 
     #print('MW tage = %f' % meta['t_age_MW'][igal]) 
 
-    f_bf = os.path.join(UT.dat_dir(), 'vipers', 'ifsps', 'lgal.spec.noise_%s.%s.%i.hdf5' % (noise, model, igal))
+    f_bf = os.path.join(UT.dat_dir(), 'vipers', 'ifsps', 'vipers.spec_%s.%s.%i_%i.hdf5' % (noise, model, igal, meta['id'][0]))
 
     #plot_spectra_vipers(specs['wave'][igal], specs['flux'][igal], specs['noise'][igal], mask=mask,
     #                    meta['id'][igal], meta['redshift'][igal], savename=f_bf.replace('.hdf5', '_spectra.png'))
