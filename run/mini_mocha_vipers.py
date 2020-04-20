@@ -154,7 +154,6 @@ def load_spectravipers(imin, imax):
     ids, z = np.loadtxt(path_spectra+'zspec.txt',  unpack =True)
 
     for filename in filenames:
-        print(filename)
         hdul = fits.open(path_spectra+filename)
         data = hdul[1].data
         
@@ -265,7 +264,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     # read noiseless Lgal spectra of the spectral_challenge mocks
     #specs, meta = Data.Spectra(sim='lgal', noise=noise, lib='bc03', sample='mini_mocha')
     # Read vipers spectra
-    specs, meta = load_spectravipers(imin = 0, imax = 100)
+    specs, meta = load_spectravipers(imin = 0, imax = 200)
     #print(specs)
 
     model       = 'vanilla'
