@@ -28,7 +28,6 @@ mpl.rcParams['ytick.labelsize'] = 'x-large'
 mpl.rcParams['ytick.major.size'] = 5
 mpl.rcParams['ytick.major.width'] = 1.5
 mpl.rcParams['legend.frameon'] = False
-import ipdb
 
 def construct_sample(): 
     ''' construct the mini Mock Challenge photometry, spectroscopy 
@@ -282,12 +281,12 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     if noise == 'none': # no noise 
         ivar_obs = np.ones(len(w_obs)) 
 
-    if 'mask0' in noise:
-        print('Using mask.')
-        mask = specs['mask'][igal]
-    else:
-        print('No mask applied.')
-        mask = None
+    #if 'mask0' in noise:
+    #    print('Using mask.')
+    #    mask = specs['mask'][igal]
+    #else:
+    #    print('No mask applied.')
+    #    mask = None
         
     print('--- input ---') 
     print('z = %f' % meta['redshift'][igal])
@@ -312,7 +311,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
                 flux_obs, 
                 ivar_obs, 
                 meta['redshift'][igal], 
-                mask=mask, 
+                mask=specs['mask'][igal], 
                 nwalkers=nwalkers, 
                 burnin=burnin, 
                 niter=niter, 
