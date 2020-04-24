@@ -230,7 +230,7 @@ def plot_spectra_vipers_samples(wave, flux, noise, mask, id_i, z, bestfit, saven
     fig = plot_spectra_vipers(wave, flux, noise, mask, id_i, z, savename, returnfig = True)
     plt.plot(bestfit['wavelength_model'][0], bestfit['flux_model'][0], 'powderblue', linewidth = 1., alpha = 1.) 
     plt.savefig(savename, dpi = 700)
-
+    plt.close()
     
 def plot_walk(chain, labels, savename):
 
@@ -239,6 +239,7 @@ def plot_walk(chain, labels, savename):
     c.add_chain(chain, parameters=labels)
     fig = c.plotter.plot_walks(convolve=100)
     fig.savefig(savename,tight_layout=True, dpi=300)
+    plt.close()
 
 def plot_contours(chain, labels, savename):
 
@@ -248,6 +249,7 @@ def plot_contours(chain, labels, savename):
     fig = c.plotter.plot(figsize="column")
     fig.set_size_inches(5 + fig.get_size_inches())
     fig.savefig(savename,tight_layout=True, dpi=300)
+    plt.close()
 
     
 def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwrite=False, justplot=False): 
@@ -296,7 +298,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     #print('MW tage = %f' % meta['t_age_MW'][igal]) 
 
     f_bf = os.path.join(UT.dat_dir(), 'vipers', 'ifsps', 'vipers.spec_%s.%s.%i_%i.hdf5' % (noise, model, igal, meta['id'][0]))
-
+    print (f_bf)
     #plot_spectra_vipers(specs['wave'][igal], specs['flux'][igal], specs['noise'][igal], mask=mask,
     #                    meta['id'][igal], meta['redshift'][igal], savename=f_bf.replace('.hdf5', '_spectra.png'))
 
@@ -333,15 +335,20 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     try: 
         # plotting on nersc never works.
         if os.environ['NERSC_HOST'] == 'cori': return None 
-    except KeyError: 
+    except KeyError:
+
+        #make some verifications before plotting, to make sure all is consistent:
+        assert (np.isclose(bestfit['wavelength_data'], w_obs)).all(), 'The object loaded from the h5py file does not correspond to the loaded spectra.'
+        assert (np.isclose(bestfit['flux_data'], flux_obs)).all(), 'The object loaded from the h5py file does not correspond to the loaded spectra.'
+        
         # corner plot of the posteriors 
         fig = DFM.corner(bestfit['mcmc_chain'], range=bestfit['priors'], quantiles=[0.16, 0.5, 0.84], 
                 levels=[0.68, 0.95], nbin=40, smooth=True, 
                 labels=labels, label_kwargs={'fontsize': 20}) 
                 #truths=truths, labels=labels, label_kwargs={'fontsize': 20}) 
         fig.savefig(f_bf.replace('.hdf5', '.png'), bbox_inches='tight')
-
-        plot_spectra_vipers_samples(w_obs, flux_obs, specs['noise'][igal], mask = mask,
+        
+        plot_spectra_vipers_samples(w_obs, flux_obs, specs['noise'][igal], mask = specs['mask'][igal],
                                     id_i = meta['id'][igal], z = meta['redshift'][igal], bestfit = bestfit,
                                     savename=f_bf.replace('.hdf5', '_spectra_samples.png'))
         
