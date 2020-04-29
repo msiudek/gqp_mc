@@ -149,9 +149,9 @@ def load_spectravipers(imin, imax):
     noise = []
     mask = []
     redshift = []
-    id_list = []
+    ids = []
     
-    ids, z = np.loadtxt(path_spectra+'zspec.txt',  unpack =True)
+    #ids, z = np.loadtxt(path_spectra+'zspec.txt',  unpack =True)
 
     for filename in filenames:
         hdul = fits.open(path_spectra+filename)
@@ -172,14 +172,8 @@ def load_spectravipers(imin, imax):
         mask_0 = data['MASK']==0
         mask.append(mask_0)
         
-        # get vipers id from the filename
-        survey, id_i = filename[:-5].split('_')
-        id_i = int(id_i)
-        # match it with redshifts file loaded above
-        z_i = z[ids == id_i][0]
-
-        redshift.append(z_i)
-        id_list.append(id_i)
+        redshift.append(float(hdul[1].header['REDSHIFT']))
+        ids.append(int(hdul[1].header['ID']))
         
     # Create dics we will populate
     specs = {
@@ -192,7 +186,7 @@ def load_spectravipers(imin, imax):
     
     meta = {
         'redshift':np.array(redshift),
-        'id': np.array(id_list),
+        'id': np.array(ids),
     }
     return specs, meta
 
@@ -279,7 +273,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     if noise != 'none': ivar_obs = specs['ivar'][igal]
     #truths      = [meta['logM_fiber'][igal], np.log10(meta['Z_MW'][igal]), meta['t_age_MW'][igal], None, None]
     labels      = ['$\log M_*$', '$\log Z$', r'$t_{\rm age}$', 'dust2', r'$\tau$']
-
+    
     if noise == 'none': # no noise 
         ivar_obs = np.ones(len(w_obs)) 
 
@@ -297,7 +291,7 @@ def fit_spectra(igal, noise='none', nwalkers=100, burnin=100, niter=1000, overwr
     #print('MW Z = %f' % meta['Z_MW'][igal]) 
     #print('MW tage = %f' % meta['t_age_MW'][igal]) 
 
-    f_bf = os.path.join(UT.dat_dir(), 'vipers', 'ifsps', 'vipers.spec_%s.%s.%i_%i.hdf5' % (noise, model, igal, meta['id'][0]))
+    f_bf = os.path.join(UT.dat_dir(), 'vipers', 'ifsps', 'vipers.spec_%s.%s.%i_%i.hdf5' % (noise, model, igal, meta['id'][igal]))
     print (f_bf)
     #plot_spectra_vipers(specs['wave'][igal], specs['flux'][igal], specs['noise'][igal], mask=mask,
     #                    meta['id'][igal], meta['redshift'][igal], savename=f_bf.replace('.hdf5', '_spectra.png'))
